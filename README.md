@@ -3,6 +3,11 @@ An interactive application to explore the fourier spectrum of an image and find 
 
 ![Demo image](demo-img.png)
 
+Used core frameworks and libraries:
+
+- Frontend: NPM, Vue.js, Quasar
+- Backend: FLASK
+
 ## Frontend
 
 To run frontend, enter
@@ -18,7 +23,7 @@ Make sure you have installed all requirements:
 ```bash
 cd backend
 pip install -r requirements.txt
-``
+```
 
 To run the backend, enter
 ```bash
