@@ -10,14 +10,14 @@
             <img :src="image" />
           </q-card-media>
           <q-card-main>
-            <q-uploader :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="sendImage" />
+            <q-uploader v-model="imageURL" :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="initImage" />
           </q-card-main>
         </q-card>
       </div>
       <div class="col-md-4 col-s-12">
         <q-card class="">
           <q-card-title>
-            Magnitude spectrum
+            Amplitude spectrum
           </q-card-title>
           <q-card-media>
             <img :src="spectrumImage" />
@@ -26,7 +26,7 @@
             <div class="row block gutter-s full-width">
               <div class="col">
                 Frequency thresholds
-                <q-range v-model="filterThreshold" :min="0" :max="255" label-always :step="1" @change="changeThreshold" />
+                <q-range :value="filterThreshold" @change="val => {filterThreshold = val}" :min="0" :max="255" label-always :step="1" />
               </div>
               <div class="col">
                 <q-toggle v-model="inverseFilter" color="teal-8" label="Inverse filter" />
@@ -77,6 +77,7 @@ export default {
   },
   data () {
     return {
+      progId: 0,
       image: '',
       imageURL: '',
       spectrumImage: '',
@@ -95,27 +96,31 @@ export default {
   },
   name: 'FourierSpectrumExplorer',
   watch: {
-    spectrumImage: function () {
+    spectrumImage () {
       console.log('Spectrum image has been modified')
+    },
+    filterThreshold () {
+      console.log('Filter thresholds have been modified')
+      this.getModSpectrum()
     }
   },
   methods: {
-    changeThreshold () {
-      console.log('Changing the threshold...')
+    getModSpectrum () {
       axios.post(`http://localhost:5000/filter/`, {
         low: this.filterThreshold.min,
-        high: this.filterThreshold.max
+        high: this.filterThreshold.max,
+        progId: this.progId
       })
         .then(response => {
           // JSON responses are automatically parsed.
           this.spectrumImage = response.data['spectrumImage']
-          this.imageResult = response.data['newImage']
+          this.imageResult = response.data['imageResult']
         })
         .catch(e => {
           this.errors.push(e)
         })
     },
-    sendImage (event) {
+    initImage (event) {
       // Convert to base64 code
       let file = event[0]
       let imgBase64 = ''
@@ -125,7 +130,9 @@ export default {
       reader.onload = function () {
         imgBase64 = reader.result.toString('base64')
         this.image = imgBase64
-        this.imageResult = imgBase64
+
+        let low = this.filterThreshold.min
+        let high = this.filterThreshold.max
 
         console.log(reader.result.toString('base64'))
         console.log('Sent:')
@@ -134,12 +141,16 @@ export default {
         // let imgBase64 = event[0]['__img']['currentSrc'].split('base64,')[1]
         // Post to API
         axios.post(`http://localhost:5000/`, {
-          image: imgBase64
+          image: imgBase64,
+          low: low,
+          high: high
         })
           .then(response => {
             // JSON responses are automatically parsed.
             // this.spectrumImage = 'data:image/png;base64,' + response.data['image']
-            this.spectrumImage = response.data['image']
+            this.spectrumImage = response.data['spectrumImage']
+            this.imageResult = response.data['imageResult']
+            this.progId = response.data['progId']
             console.log('Response:')
             console.log(this.spectrumImage)
           })
