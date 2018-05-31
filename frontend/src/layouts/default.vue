@@ -1,21 +1,5 @@
 <template>
-  <q-layout view="lHh lpr lFf">
-    <q-layout-header>
-      <q-toolbar
-        color="primary"
-        :inverted="$q.theme === 'ios'"
-      >
-
-        <q-toolbar-title>
-          FOSPEX - Fourier spectrum explorer
-        </q-toolbar-title>
-      </q-toolbar>
-    </q-layout-header>
-
-    <q-page-container>
-      <router-view />
-    </q-page-container>
-  </q-layout>
+  <router-view />
 </template>
 
 <script>
@@ -34,5 +18,11 @@ export default {
 }
 </script>
 
-<style>
+<style lang="stylus">
+@import '~variables'
+body
+  background: $body-bg
+
+.bg-primary
+  color: black !important
 </style>

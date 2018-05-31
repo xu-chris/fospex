@@ -1,66 +1,172 @@
 <template>
-  <q-page class="flex flex-center" :padding="true">
-    <div class="row gutter-sm full-width full-height" id="fourier">
-      <div class="col-md-4 col-s-12">
-        <q-card class="">
-          <q-card-title>
-            Input image
-          </q-card-title>
-          <q-card-media>
+  <q-layout view="lHh lpr lFf" color="dark">
+    <q-toolbar color="dark">
+        <q-btn
+          v-if="image != ''"
+          flat round dense
+          icon="arrow_back"
+          @click="image = ''"
+        />
+        <q-toolbar-title>
+          Fospex
+        </q-toolbar-title>
+      </q-toolbar>
+    <q-page-container>
+      <q-page class="flex flex-center" :padding="true">
+      <q-card color="dark">
+        <q-card-main v-if="image == ''">
+          <q-uploader v-model="imageURL" :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="initImage"  color="dark" />
+        </q-card-main>
+      </q-card>
+      <q-card color="dark" v-if="image != ''" class="full-width block">
+        <div v-if="!loadInit" class="row full-width">
+          <q-card-media v-if="!showModified" class="col-lg-9 col-md-8">
             <img :src="image" />
           </q-card-media>
-          <q-card-main>
-            <q-uploader v-model="imageURL" :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="initImage" />
-          </q-card-main>
-        </q-card>
-      </div>
-      <div class="col-md-4 col-s-12">
-        <q-card class="">
-          <q-card-title>
-            Amplitude spectrum
-          </q-card-title>
-          <q-card-media>
-            <img :src="spectrumImage" />
-          </q-card-media>
-          <q-card-main>
-            <div class="row block gutter-s full-width">
-              <div class="col">
-                Frequency thresholds
-                <q-range :value="filterThreshold" @change="val => {filterThreshold = val}" :min="0" :max="255" label-always :step="1" />
-              </div>
-              <div class="col">
-                <q-toggle v-model="inverseFilter" color="teal-8" label="Inverse filter" />
-              </div>
-              <div class="col">
-                <q-toggle v-model="isGaussian" color="teal-8" label="Filter with Gaussian" />
-                <p v-show="isGaussian">Gaussian sigma value</p>
-                <q-slider v-model="sigma" v-show="isGaussian" :min="1" :max="100" label-always :step="1" />
-              </div>
-            </div>
-          </q-card-main>
-        </q-card>
-      </div>
-      <div class="col-md-4 col-s-12">
-        <q-card class="">
-          <q-card-title>
-            Output image
-          </q-card-title>
-          <q-card-media>
+          <q-card-media class="col-lg-9 col-md-8" v-if="showModified">
             <img :src="imageResult" />
           </q-card-media>
-        </q-card>
-      </div>
-    </div>
-  </q-page>
+        <q-inner-loading :visible="loadMod" dark></q-inner-loading>
+        <q-card-main class="no-padding col-lg-3 col-md-4" id="inspector">
+          <q-list no-border color="dark">
+            <q-item>
+              <q-btn-toggle
+                v-model="showModified"
+                toggle-color="primary"
+                :options="[
+                  {label: 'Show original', value: false},
+                  {label: 'Show modified', value: true},
+                ]"
+              />
+            </q-item>
+            <q-item-separator />
+            <q-collapsible icon="explore" label="Image spectrum">
+              <div>
+                <q-list no-border color="dark">
+                  <q-item>
+                    <img :src="spectrumImage" class="full-width" />
+                    <q-btn
+                      outline
+                      round
+                      icon="zoom_in"
+                      color="primary"
+                      @click="spectrumOpened = true"
+                      id="zoomIn"
+                    >
+                    </q-btn>
+                  </q-item>
+                  <q-list-header>Filter kernel thresholds (in %)</q-list-header>
+                  <q-item>
+                    <q-range :value="kernelThresholds" @change="val => {kernelThresholds = val}" :min="0" :max="100" label-always :step="1" />
+                  </q-item>
+                  <q-list-header>Filter type</q-list-header>
+                  <q-item>
+                    <q-btn-toggle
+                      v-model="filterType"
+                      toggle-color="primary"
+                      :options="[
+                        {label: 'Bandpass', value: 'bandpass'},
+                        {label: 'Band reject', value: 'bandreject'},
+                      ]"
+                    />
+                  </q-item>
+                  <q-list-header>Windowing method</q-list-header>
+                  <q-item>
+                    <q-btn-toggle
+                      v-model="windowingMethod"
+                      toggle-color="primary"
+                      :options="[
+                        {label: 'None', value: ''},
+                        {label: 'Hanning window', value: 'hanning'},
+                        {label: 'Parzel window', value: 'parzel'},
+                      ]"
+                      disabled
+                    />
+                  </q-item>
+                  <q-item>
+                    <q-item-main>
+                      <q-item-tile label>Smoothing</q-item-tile>
+                    </q-item-main>
+                    <q-item-side right>
+                      <q-toggle v-model="isGaussian" />
+                    </q-item-side>
+                  </q-item>
+                  <q-item v-show="isGaussian">
+                    <q-slider v-model="sigma" v-show="isGaussian" :min="1" :max="100" label-always :step="1" />
+                  </q-item>
+                </q-list>
+              </div>
+            </q-collapsible>
+            <q-item-separator />
+          </q-list>
+        </q-card-main>
+        </div>
+        <q-inner-loading :visible="loadInit" dark></q-inner-loading>
+      </q-card>
+      <q-modal v-model="spectrumOpened" no-backdrop-dismiss  :content-css="{minWidth: '80vw', minHeight: '80vh'}" :content-class="dark" dark>
+        <q-modal-layout dark>
+          <q-toolbar slot="header">
+            <q-toolbar-title>
+              Image spectrum
+            </q-toolbar-title>
+            <q-btn
+              flat
+              round
+              dense
+              v-close-overlay
+              @click="spectrumOpened = false"
+              icon="close"
+            />
+          </q-toolbar>
+          <div class="layout-padding">
+            <img :src="spectrumImage" class="full-height" />
+          </div>
+        </q-modal-layout>
+      </q-modal>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 
-<style>
+<style lang="stylus">
+@import '~variables'
+#inspector
+  background: #303030
+#zoomIn
+  position: absolute
+  right: 10px
+  bottom: 10px
 </style>
 
 <script>
 
-import {QRange, QSlider, QUploader, QCard, QCardMedia, QCardTitle, QCardMain, QCardSeparator, QCardActions, QToggle} from 'quasar'
+import {
+  QRange,
+  QSlider,
+  QUploader,
+  QCard,
+  QCardMedia,
+  QCardTitle,
+  QCardMain,
+  QCardSeparator,
+  QCardActions,
+  QToggle,
+  QBtnToggle,
+  QList,
+  QListHeader,
+  QItem,
+  QItemMain,
+  QItemSeparator,
+  QItemSide,
+  QItemTile,
+  QCollapsible,
+  QModal,
+  QModalLayout,
+  QInnerLoading,
+  QSpinnerGears
+} from 'quasar'
 import axios from 'axios'
+import vueDropzone from 'vue2-dropzone'
 
 export default {
   components: {
@@ -73,7 +179,21 @@ export default {
     QCardMain,
     QCardSeparator,
     QCardActions,
-    QToggle
+    QToggle,
+    QBtnToggle,
+    QList,
+    QListHeader,
+    QItem,
+    QItemMain,
+    QItemSeparator,
+    QItemSide,
+    QItemTile,
+    QCollapsible,
+    vueDropzone,
+    QModal,
+    QModalLayout,
+    QInnerLoading,
+    QSpinnerGears
   },
   data () {
     return {
@@ -82,16 +202,29 @@ export default {
       imageURL: '',
       spectrumImage: '',
       imageResult: '',
-      filterThreshold: {
+      frequencyThreshold: {
         min: 0,
-        max: 255
+        max: 100
       },
-      inverseFilter: false,
+      kernelThresholds: {
+        min: 0,
+        max: 100
+      },
+      filterType: 'bandpass',
       mode: 'magnitude',
       filterForm: 'circle',
       isGaussian: false,
+      enableFilter: false,
       sigma: 5,
-      notchFilterPositions: []
+      notchFilterPositions: [],
+      showModified: true,
+      dropOptions: {
+        url: ''
+      },
+      spectrumOpened: false,
+      windowingMethod: '',
+      loadInit: false,
+      loadMod: false
     }
   },
   name: 'FourierSpectrumExplorer',
@@ -99,22 +232,35 @@ export default {
     spectrumImage () {
       console.log('Spectrum image has been modified')
     },
-    filterThreshold () {
+    frequencyThreshold () {
       console.log('Filter thresholds have been modified')
+      this.getModSpectrum()
+    },
+    kernelThresholds () {
+      console.log('Filter thresholds have been modified')
+      this.getModSpectrum()
+    },
+    filterType () {
+      console.log('Filter method have been modified')
       this.getModSpectrum()
     }
   },
   methods: {
     getModSpectrum () {
+      this.loadMod = true
       axios.post(`http://localhost:5000/filter/`, {
-        low: this.filterThreshold.min,
-        high: this.filterThreshold.max,
-        progId: this.progId
+        val_low: this.kernelThresholds.min,
+        val_high: this.kernelThresholds.max,
+        freq_low: this.frequencyThreshold.min,
+        freq_high: this.frequencyThreshold.max,
+        progId: this.progId,
+        filter_type: this.filterType
       })
         .then(response => {
           // JSON responses are automatically parsed.
           this.spectrumImage = response.data['spectrumImage']
           this.imageResult = response.data['imageResult']
+          this.loadMod = false
         })
         .catch(e => {
           this.errors.push(e)
@@ -125,14 +271,27 @@ export default {
       let file = event[0]
       let imgBase64 = ''
       let reader = new FileReader()
+      this.loadInit = true
       reader.readAsDataURL(file)
 
       reader.onload = function () {
         imgBase64 = reader.result.toString('base64')
         this.image = imgBase64
 
-        let low = this.filterThreshold.min
-        let high = this.filterThreshold.max
+        let valLow = this.kernelThresholds.min
+        let valHigh = this.kernelThresholds.max
+
+        let freqLow = this.frequencyThreshold.min
+        let freqHigh = this.frequencyThreshold.max
+
+        if (!this.enableFilter) {
+          freqLow = 0
+          freqHigh = 1000000
+          valLow = 0
+          valHigh = 1000000
+        }
+
+        let filterType = this.filterType
 
         console.log(reader.result.toString('base64'))
         console.log('Sent:')
@@ -142,8 +301,11 @@ export default {
         // Post to API
         axios.post(`http://localhost:5000/`, {
           image: imgBase64,
-          low: low,
-          high: high
+          val_low: valLow,
+          val_high: valHigh,
+          freq_low: freqLow,
+          freq_high: freqHigh,
+          filter_type: filterType
         })
           .then(response => {
             // JSON responses are automatically parsed.
@@ -151,6 +313,8 @@ export default {
             this.spectrumImage = response.data['spectrumImage']
             this.imageResult = response.data['imageResult']
             this.progId = response.data['progId']
+
+            this.loadInit = false
             console.log('Response:')
             console.log(this.spectrumImage)
           })
@@ -161,6 +325,7 @@ export default {
         console.log('Error: ', error)
       }
       this.imageURL = ''
+      console.log('Prog Id: ' + this.progId)
     }
   }
 }

@@ -65,12 +65,10 @@ module.exports = function (ctx) {
       ],
       // Quasar plugins
       plugins: [
-        'Notify'
+        'Notify',
+        'Loading'
       ]
     },
-    // animations: 'all' --- includes all animations
-    animations: [
-    ],
     pwa: {
       cacheExt: 'js,html,css,ttf,eot,otf,woff,woff2,json,svg,gif,jpg,jpeg,png,wav,ogg,webm,flac,aac,mp4,mp3',
       manifest: {
@@ -130,6 +128,11 @@ module.exports = function (ctx) {
     },
 
     // leave this here for Quasar CLI
-    starterKit: '1.0.3'
+    starterKit: '1.0.3',
+    // animations: 'all' --- includes all animations
+    animations: [
+      'zoomIn',
+      'zoomOut'
+    ]
   }
 }

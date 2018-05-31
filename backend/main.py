@@ -1,25 +1,39 @@
-import numpy as np
 import io
+import numpy as np
 
+# REST API
 from flask import Flask     # For REST API suppprt
 from flask import request
 from flask_cors import CORS # To call the API with cross-origins
-from matplotlib import pyplot as plt
+
+# Encode and decode message
 import json
 import base64
+
+# Encode and decode image
 from PIL import Image
 import cv2 as cv
+
+# Custom classes and methods
+import FrequencyImage as fi
+
+### Settings
+dev = False
 
 
 app = Flask(__name__)
 CORS(app)
 
+
+progresses = []
+
+
 ### ROUTES AND PROCESSES
 
 @app.route('/', methods=['GET', 'POST'])
-def upload_image():
+def init_image():
     '''
-    Decodes the base64 encoded image, sent via API post request
+    Decodes the base64 encoded image, sent via REST post request.
 
     API JSON format:
     {
@@ -33,6 +47,10 @@ def upload_image():
         print("Wrong request type. Use POST request instead.")
         return "Wrong request type. Use POST request instead."
 
+    ### 1. decode the message content
+    if dev:
+        print('-------------------------------------')
+
     # Get POST message
     message = request.data
 
@@ -40,45 +58,95 @@ def upload_image():
     message = json.loads(message)
 
     # decode image, get format
-    global img, img_format
     img, img_format = decode_image(message['image'])
 
-    # Get spectrum
-    global spectrum
-    spectrum = get_spectrum(img)
+    val_low = message['val_low']
+    val_high = message['val_high']
+    freq_low = message['freq_low']
+    freq_high = message['freq_high']
+    filter_type = message['filter_type']
 
-    # Encode spectrum into bytes and base64
-    encoded_image = encode_image(spectrum, img_format)
 
-    # build message
-    response = build_response_message(encoded_image, img_format)
+    ### 2 + 3 . Build the spectrum image and the modified image
+
+    prog_Id = len(progresses)
+    freq_image = fi.FrequencyImage(prog_Id, img, img_format, freq_low, freq_high, val_low, val_high, filter_type)
+    progresses.append(freq_image)
+    spectrum_img = freq_image.get_spectrum()
+    mod_img = freq_image.get_mod_img()
+
+
+    ### 4. Prepare response message
+    encoded_spectrum_img = encode_image(spectrum_img, img_format, saveimg=False)
+    encoded_mod_img = encode_image(mod_img, img_format, saveimg=False)
+
+
+    response = {
+        'imageResult': encoded_mod_img,
+        'spectrumImage': encoded_spectrum_img,
+        'progId': prog_Id
+    }
+
+    response = make_response(response)
 
     return response
+
+
+
 
 @app.route('/filter/', methods=['GET', 'POST'])
 def filter_Image():
 
-    global high, low
-    low = json.loads(request.data)['low']
-    high = json.loads(request.data)['high']
+    global prog_Id, progresses
 
-    mod_spectrum = bandpassfilter_spectrum(spectrum,low,high)
-    mod_image = get_image_from_spectrum(mod_spectrum)
+    ### 1. decode the message content
 
-    encoded_spectrum = encode_image(mod_spectrum, img_format)
+    # Get POST message
+    message = request.data
 
-    # Encode spectrum into bytes and base64
-    encoded_image = encode_image(mod_image, img_format)
+    # Convert json to python dict
+    message = json.loads(message)
+
+    val_low = message['val_low']
+    val_high = message['val_high']
+    freq_low = message['freq_low']
+    freq_high = message['freq_high']
+    filter_type = message['filter_type']
+
+
+    prog_Id = message['progId']
+
+    
+    if dev:
+        print('-------------------------------------')
+        print('Start filtering, prog. ID: {}'.format(prog_Id))
+
+    # Get correct progress
+    freq_img = progresses[prog_Id]
+
+    ### 2. Modify spectrum
+    freq_img.filter_spectrum(freq_low, freq_high, val_low, val_high, filter_type)
+    mod_spectrum = freq_img.get_spectrum()
+
+
+    ### 3. Get image from new spectrum
+    mod_image = freq_img.get_mod_img()
+
+
+    ### 4. Prepare response message
+    encoded_spectrum = encode_image(mod_spectrum, freq_img.img_format)
+    encoded_mod_img = encode_image(mod_image, freq_img.img_format)
 
     response = {
-        'newImage': encoded_image,
+        'imageResult': encoded_mod_img,
         'spectrumImage': encoded_spectrum
     }
 
     # build message
-    response = json.dumps(response)
+    response = make_response(response)
 
     return response
+
 
 
 
@@ -111,12 +179,16 @@ def decode_image(img_base64, saveimg=False):
     
     return img, img_format
 
+
+
+
 def encode_image(img, img_format, saveimg=False):
     
     # Save array as image file
     if saveimg:
         buffer = Image.fromarray(np.uint8(img))
-        buffer.save('result.png')
+        filename = str(np.abs(hash(str(img))))
+        buffer.save('enc_'+filename+'.png')
 
     # Fix JPEG => JPG file ending
     if img_format == 'jpeg':
@@ -133,66 +205,18 @@ def encode_image(img, img_format, saveimg=False):
 
     return img_base64
 
-def build_response_message (img_b64, img_format):
 
-    # Dict
-    response = {
-        'image': img_b64
-    }
+
+
+def make_response (message):
 
     # Return as JSON
-    return json.dumps(response)
+    return json.dumps(message)
 
 
-### IMAGE PROCESSING METHODS
-
-def get_spectrum(img):
-
-    # Calculate the frequency spectrum with fast fourier transform
-    f = np.fft.fft2(img)
-
-    # Now shift the quadrants around so that low spatial frequencies are in
-    # the center of the 2D fourier transformed image.
-    fshift = np.fft.fftshift(f)
-
-    # Calculate a 2D power spectrum
-    psd_2D = np.abs( fshift )**2
-
-    # Calculate the azimuthally averaged 1D power spectrum
-    # psd_1D = radialProfile.azimuthalAverage(psd_2D)
-
-    # Calculate the magnitude spectrum
-    magnitude_spectrum = 20 * np.log(np.abs(fshift))
-
-    # rescale to -1:+1 for display
-    # fshift = (
-    #     (
-    #         (fshift - np.min(fshift)) * 2
-    #     ) / np.ptp(fshift)  # 'ptp' = range
-    # ) - 1
-
-    return np.abs(magnitude_spectrum)
 
 
-def get_image_from_spectrum(spec):
-
-    # Reverse the fft shifting
-    f = np.fft.ifftshift(spec)
-
-    # Inverse the FFT
-    img = np.fft.ifft2(f)
-
-    # Make sure it contains only real numbers
-    img = np.abs(img)
-
-    return img
-
-
-def bandpassfilter_spectrum(spec, low, high):
-    mod_spectrum = spec.copy()
-    mod_spectrum[mod_spectrum[:] < low] = 0.0
-    mod_spectrum[mod_spectrum[:] > high] = 0.0
-    return mod_spectrum
+######## MAIN
 
 if __name__ == '__main__':
     app.run(debug=True)
