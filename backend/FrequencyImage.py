@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from math import sqrt
 
 ### Settings
-dev = False
+dev = True
 
 def circle_kernel(width = 100, height = 100, radius = 50, max_val=255):
 
@@ -120,12 +120,12 @@ class FrequencyImage:
             print('Image metrics:')
             print('Size of image: {}'.format(np.shape(img)))
             print('Min: {}, max: {}'.format(np.min(img), np.max(img)))
-            print('Median: {}, meam: {}'.format(np.median(img), np.mean(img)))
+            print('Median: {}, mean: {}'.format(np.median(img), np.mean(img)))
             print('\n')
             print('Spectrum metrics:')
             print('Format of fourier transformation: {}'.format(np.shape(fshift)))
             print('Min: {}, max: {}'.format(np.min(fshift), np.max(fshift)))
-            print('Median: {}, meam: {}'.format(np.median(fshift), np.mean(fshift)))
+            print('Median: {}, mean: {}'.format(np.median(fshift), np.mean(fshift)))
             print('\n')
 
         self.spectrum = fshift
