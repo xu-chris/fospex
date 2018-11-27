@@ -6,7 +6,7 @@ An interactive application to explore the fourier spectrum of an image and find 
 Used core frameworks and libraries:
 
 - Frontend: NPM, Vue.js, Quasar
-- Backend: FLASK
+- Backend: FLASK, matplotlib, Pillow, OpenCV
 
 ## Frontend
 
@@ -23,14 +23,25 @@ Make sure you have installed all requirements:
 ```bash
 cd backend
 pip install -r requirements.txt
-``
+```
 
-To run the backend, enter
+To run the backend, enter:
+
 ```bash
 FLASK_APP=main.py flask run
 ```
 
-## Thery: Fourier transformation and frequency spectrum
+## Troubleshooting
+
+#### Mac OS X Error: `Python is not installed as a framework.` when starting backend `main.py`
+
+This is because *matplotlib* is installed via PIP. To solve this, enter this into your console:
+
+```
+echo backend: TkAgg >> ~/.matplotlib/matplotlibrc
+```
+
+## Theory: Fourier transformation and frequency spectrum
 
 There is a lot of explanation in the internet. Some of useful resources are:
 

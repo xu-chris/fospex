@@ -1,130 +1,121 @@
 <template>
-  <q-layout view="lHh lpr lFf" color="dark">
+  <q-layout view="lHh lPr lFf" color="dark">
     <q-toolbar color="dark">
-        <q-btn
-          v-if="image != ''"
-          flat round dense
-          icon="arrow_back"
-          @click="image = ''"
-        />
-        <q-toolbar-title>
-          Fospex
-        </q-toolbar-title>
-      </q-toolbar>
+      <q-btn
+        v-if="image != ''"
+        flat round dense
+        icon="arrow_back"
+        @click="image = ''"
+      />
+      <q-toolbar-title>
+        Fospex
+      </q-toolbar-title>
+    </q-toolbar>
     <q-page-container>
       <q-page class="flex flex-center" :padding="true">
-      <q-card color="dark">
-        <q-card-main v-if="image == ''">
-          <q-uploader v-model="imageURL" :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="initImage"  color="dark" />
-        </q-card-main>
-      </q-card>
-      <q-card color="dark" v-if="image != ''" class="full-width block">
-        <div v-if="!loadInit" class="row full-width">
-          <q-card-media v-if="!showModified" class="col-lg-9 col-md-8">
-            <img :src="image" />
-          </q-card-media>
-          <q-card-media class="col-lg-9 col-md-8" v-if="showModified">
-            <img :src="imageResult" />
-          </q-card-media>
-        <q-inner-loading :visible="loadMod" dark></q-inner-loading>
-        <q-card-main class="no-padding col-lg-3 col-md-4" id="inspector">
-          <q-list no-border color="dark">
-            <q-item>
-              <q-btn-toggle
-                v-model="showModified"
-                toggle-color="primary"
-                :options="[
-                  {label: 'Show original', value: false},
-                  {label: 'Show modified', value: true},
-                ]"
-              />
-            </q-item>
-            <q-item-separator />
-            <q-collapsible icon="explore" label="Image spectrum">
-              <div>
-                <q-list no-border color="dark">
-                  <q-item>
-                    <img :src="spectrumImage" class="full-width" />
-                    <q-btn
-                      outline
-                      round
-                      icon="zoom_in"
-                      color="primary"
-                      @click="spectrumOpened = true"
-                      id="zoomIn"
-                    >
-                    </q-btn>
-                  </q-item>
-                  <q-list-header>Filter kernel thresholds (in %)</q-list-header>
-                  <q-item>
-                    <q-range :value="kernelThresholds" @change="val => {kernelThresholds = val}" :min="0" :max="100" label-always :step="1" />
-                  </q-item>
-                  <q-list-header>Filter type</q-list-header>
-                  <q-item>
-                    <q-btn-toggle
-                      v-model="filterType"
-                      toggle-color="primary"
-                      :options="[
-                        {label: 'Bandpass', value: 'bandpass'},
-                        {label: 'Band reject', value: 'bandreject'},
-                      ]"
-                    />
-                  </q-item>
-                  <q-list-header>Windowing method</q-list-header>
-                  <q-item>
-                    <q-btn-toggle
-                      v-model="windowingMethod"
-                      toggle-color="primary"
-                      :options="[
-                        {label: 'None', value: ''},
-                        {label: 'Hanning window', value: 'hanning'},
-                        {label: 'Parzel window', value: 'parzel'},
-                      ]"
-                      disabled
-                    />
-                  </q-item>
-                  <q-item>
-                    <q-item-main>
-                      <q-item-tile label>Smoothing</q-item-tile>
-                    </q-item-main>
-                    <q-item-side right>
-                      <q-toggle v-model="isGaussian" />
-                    </q-item-side>
-                  </q-item>
-                  <q-item v-show="isGaussian">
-                    <q-slider v-model="sigma" v-show="isGaussian" :min="1" :max="100" label-always :step="1" />
-                  </q-item>
-                </q-list>
-              </div>
-            </q-collapsible>
-            <q-item-separator />
-          </q-list>
-        </q-card-main>
+        <q-card color="dark">
+          <q-card-main v-if="image == ''">
+            <q-uploader v-model="imageURL" :auto-expand="false" :url="imageURL" :hide-upload-button="true" @add="initImage"  color="dark" />
+          </q-card-main>
+        </q-card>
+        <div v-if="!showModified" class="col-lg-9 col-md-8">
+          <img :src="image" />
         </div>
-        <q-inner-loading :visible="loadInit" dark></q-inner-loading>
-      </q-card>
-      <q-modal v-model="spectrumOpened" no-backdrop-dismiss  :content-css="{minWidth: '80vw', minHeight: '80vh'}" :content-class="dark" dark>
-        <q-modal-layout dark>
-          <q-toolbar slot="header">
-            <q-toolbar-title>
-              Image spectrum
-            </q-toolbar-title>
-            <q-btn
-              flat
-              round
-              dense
-              v-close-overlay
-              @click="spectrumOpened = false"
-              icon="close"
-            />
-          </q-toolbar>
-          <div class="layout-padding">
-            <img :src="spectrumImage" class="full-height" />
-          </div>
-        </q-modal-layout>
-      </q-modal>
+        <div class="col-lg-9 col-md-8" v-if="showModified">
+          <img :src="imageResult" />
+        </div>
+        <q-inner-loading :visible="loadMod" dark></q-inner-loading>
+        <q-modal v-model="spectrumOpened" no-backdrop-dismiss  :content-css="{minWidth: '80vw', minHeight: '80vh'}" :content-class="dark" dark>
+          <q-modal-layout dark>
+            <q-toolbar slot="header">
+              <q-toolbar-title>
+                Image spectrum
+              </q-toolbar-title>
+              <q-btn
+                flat
+                round
+                dense
+                v-close-overlay
+                @click="spectrumOpened = false"
+                icon="close"
+              />
+            </q-toolbar>
+            <div class="layout-padding">
+              <img :src="spectrumImage" class="full-height" />
+            </div>
+          </q-modal-layout>
+        </q-modal>
       </q-page>
     </q-page-container>
+    <q-layout-drawer side="right" v-model="dummy" id="inspector">
+      <q-list no-border color="dark" dark>
+        <q-item>
+          <q-btn-toggle
+            v-model="showModified"
+            toggle-color="primary"
+            :options="[
+              {label: 'Show original', value: false},
+              {label: 'Show modified', value: true},
+            ]"
+          />
+        </q-item>
+        <q-item-separator />
+        <q-collapsible icon="explore" label="Image spectrum">
+          <div>
+            <q-list no-border color="dark">
+              <q-item>
+                <img :src="spectrumImage" class="full-width" />
+                <q-btn
+                  outline
+                  round
+                  icon="zoom_in"
+                  color="primary"
+                  @click="spectrumOpened = true"
+                  id="zoomIn"
+                >
+                </q-btn>
+              </q-item>
+              <q-list-header>Filter kernel thresholds (in %)</q-list-header>
+              <q-item>
+                <q-range :value="kernelThresholds" @change="val => {kernelThresholds = val}" :min="0" :max="100" label-always :step="1" />
+              </q-item>
+              <q-list-header>Filter type</q-list-header>
+              <q-item>
+                <q-btn-toggle
+                  v-model="filterType"
+                  toggle-color="primary"
+                  :options="[
+                    {label: 'Bandpass', value: 'bandpass'},
+                    {label: 'Band reject', value: 'bandreject'},
+                  ]"
+                />
+              </q-item>
+              <q-item-separator />
+              <q-list-header>Windowing method</q-list-header>
+              <q-item>
+                <q-btn-toggle
+                  v-model="windowingMethod"
+                  toggle-color="primary"
+                  :options="[
+                    {label: 'None', value: ''},
+                    {label: 'Hanning window', value: 'hanning'},
+                    {label: 'Parzel window', value: 'parzel'},
+                  ]"
+                  disabled
+                />
+              </q-item>
+              <q-item-separator />
+              <q-list-header>Smoothing</q-list-header>
+              <q-item>
+                <q-slider v-model="sigma" :min="1" :max="100" label-always :step="1" />
+              </q-item>
+            </q-list>
+          </div>
+        </q-collapsible>
+        <q-item-separator />
+      </q-list>
+      <q-inner-loading :visible="loadInit" dark></q-inner-loading>
+    </q-layout-drawer>
   </q-layout>
 </template>
 
@@ -224,7 +215,8 @@ export default {
       spectrumOpened: false,
       windowingMethod: '',
       loadInit: false,
-      loadMod: false
+      loadMod: false,
+      dummy: true
     }
   },
   name: 'FourierSpectrumExplorer',
