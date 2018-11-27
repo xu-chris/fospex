@@ -19,6 +19,8 @@ def circle_kernel(width = 100, height = 100, radius = 50, max_val=255):
     array[mask] = max_val
     return array
 
+
+
 def disk_kernel(width = 100, height = 100, inner_radius = 20, outer_radius = 5, max_val=255):
 
     # Get center
@@ -31,6 +33,14 @@ def disk_kernel(width = 100, height = 100, inner_radius = 20, outer_radius = 5, 
     array[mask] = max_val
     return array
 
+def gaussian_filter(kernel_size=10, sigma=5):
+
+    # Build kernel based on sigma
+    rows, cols = kernel_size
+    kernel = np.zeros((rows, cols))
+
+
+### FrequencyImage class
 
 class FrequencyImage:
 
@@ -81,11 +91,11 @@ class FrequencyImage:
         fshift = np.exp(fshift)
         # Inverse the fft shifting & FFT
         frequencies = np.fft.ifftshift(fshift)
-        mod_img = np.fft.ifft2(frequencies).real
+        mod_img = np.fft.ifft2(frequencies)
 
-        mod_img = np.abs(mod_img)
+        self.mod_img = np.abs(mod_img)
 
-        self.mod_img = mod_img
+        
 
 
 
@@ -101,7 +111,8 @@ class FrequencyImage:
         fshift = np.log(fshift)
         fshift = fshift ** 2
 
-        # TODO: Normalize spectrum to be quadratic
+        # TODO: scale spectrum to be quadratic
+        
 
         # Return results
         if dev:
