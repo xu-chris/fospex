@@ -28,7 +28,7 @@ pip install -r requirements.txt
 To run the backend, enter:
 
 ```bash
-FLASK_APP=main.py flask run
+python main.py
 ```
 
 ## Troubleshooting
