@@ -88,7 +88,17 @@
                     {label: 'Bandpass', value: 'bandpass'},
                     {label: 'Band reject', value: 'bandreject'},
                   ]"
+                  disable
                 />
+              </q-item>
+              <q-item-separator />
+              <q-list-header>Notch Filter</q-list-header>
+              <q-item>
+                <q-card color="dark">
+                  <q-card-main>
+                    <q-uploader v-model="notchURL" :auto-expand="false" :url="notchURL" :hide-upload-button="true" @add="applyNotch"  color="dark" />
+                  </q-card-main>
+                </q-card>
               </q-item>
               <q-item-separator />
               <q-list-header>Windowing method</q-list-header>
@@ -107,7 +117,7 @@
               <q-item-separator />
               <q-list-header>Smoothing</q-list-header>
               <q-item>
-                <q-slider v-model="sigma" :min="1" :max="100" label-always :step="1" />
+                <q-slider v-model="sigma" :min="1" :max="100" label-always :step="1" disable />
               </q-item>
             </q-list>
           </div>
@@ -191,6 +201,8 @@ export default {
       progId: 0,
       image: '',
       imageURL: '',
+      notch: '',
+      notchURL: '',
       spectrumImage: '',
       imageResult: '',
       frequencyThreshold: {
@@ -317,6 +329,53 @@ export default {
         console.log('Error: ', error)
       }
       this.imageURL = ''
+      console.log('Prog Id: ' + this.progId)
+    },
+    applyNotch (event) {
+      // Convert to base64 code
+      let file = event[0]
+      let imgBase64 = ''
+      let reader = new FileReader()
+      this.loadInit = true
+      reader.readAsDataURL(file)
+
+      reader.onload = function () {
+        imgBase64 = reader.result.toString('base64')
+        this.notch = imgBase64
+
+        console.log(reader.result.toString('base64'))
+        console.log('Sent:')
+        console.log(imgBase64)
+
+        // let imgBase64 = event[0]['__img']['currentSrc'].split('base64,')[1]
+        // Post to API
+        axios.post(`http://localhost:5000/filter/`, {
+          notch_image: imgBase64,
+          val_low: this.kernelThresholds.min,
+          val_high: this.kernelThresholds.max,
+          freq_low: this.frequencyThreshold.min,
+          freq_high: this.frequencyThreshold.max,
+          progId: this.progId,
+          filter_type: this.filterType
+        })
+          .then(response => {
+            // JSON responses are automatically parsed.
+            // this.spectrumImage = 'data:image/png;base64,' + response.data['image']
+            this.spectrumImage = response.data['spectrumImage']
+            this.imageResult = response.data['imageResult']
+            this.progId = response.data['progId']
+
+            this.loadInit = false
+            console.log('Response:')
+            console.log(this.spectrumImage)
+          })
+          .catch(e => {
+          })
+        this.notchURL = ''
+      }.bind(this)
+      reader.onerror = function (error) {
+        console.log('Error: ', error)
+      }
       console.log('Prog Id: ' + this.progId)
     }
   }

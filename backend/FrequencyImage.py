@@ -49,6 +49,7 @@ class FrequencyImage:
         self.prog_id = prog_id
 
         self.img = img
+        self.notch_image = None
         self.img_format = img_format
 
         self.spectrum = np.array([])
@@ -79,8 +80,16 @@ class FrequencyImage:
 
     def set_freq_high(self, freq_low):
         self.freq_low = freq_low
-    
 
+
+    def set_notch_filter_image (self, notch_image):
+
+        # Check if notch image and normal image has the same dimensions. If not, scale it
+        if notch_image.shape != self.img.shape:
+            np.resize(notch_image, self.img.shape)
+
+        # Normalize filter
+        self.notch_image = notch_image / 255
 
     def set_mod_img(self):
 
@@ -135,7 +144,7 @@ class FrequencyImage:
 
 
     
-    def filter_spectrum(self, freq_low, freq_high, val_low, val_high, filter_type='bandpass'):
+    def filter_spectrum(self, freq_low, freq_high, val_low, val_high, filter_type='bandpass', notch_image = None):
 
         if dev:
             print('Filter with these settings:\nFreq high: {}\nFreq low: {}\nval high: {}\nval low: {}\nInverse: {}'.format(freq_low, freq_high, val_low, val_high, filter_type))
@@ -149,13 +158,10 @@ class FrequencyImage:
 
         self.filter_type = filter_type
 
-        # Reset spectrum
-        if dev:
-            print('Is mod_spectrum equal to spectrum? {}'.format(np.array_equal(self.mod_spectrum, self.spectrum)))
-            print('Reset the spectrum...')
+        self.notch_image = notch_image
+
+        # Reset spectrum so we always modify a fresh copy
         mod_spectrum = np.copy(self.spectrum)
-        if dev:
-            print('Is mod_spectrum equal to spectrum? {}'.format(np.array_equal(mod_spectrum, self.spectrum)))
 
         min_val = np.min(mod_spectrum.real)
         if min_val < 0:
@@ -175,14 +181,29 @@ class FrequencyImage:
         #     mod_spectrum[mod_spectrum[:] < val_low] = 0.0
         #     mod_spectrum[mod_spectrum[:] > max_val * val_high / 1000] = 0.0
 
-        # Make filter_type filter mask
+        # Make filter_type filter mask based on band pass or band reject
         if filter_type == 'bandpass':
             kernel = disk_kernel(np.shape(mod_spectrum)[0], np.shape(mod_spectrum)[1], max_val * val_low / 100 * 2, max_val *  val_high / 100 * 2, max_val=1.0)
         else:
             kernel = disk_kernel(np.shape(mod_spectrum)[0], np.shape(mod_spectrum)[1], max_val * val_high / 100 * 2, max_val * val_low / 100 * 2, max_val=1.0)
-            
 
         mod_spectrum *= kernel
+
+        print(kernel)
+
+        if dev:
+            print('Size of kernel: {}'.format(kernel.shape))
+        # Apply notch image as filter if given
+        if notch_image is not None:
+            if dev:
+                print("notch image is not None. Modify mod spectrum with notch image")
+                print('Size of notch image: {}'.format(notch_image.shape))
+            mod_spectrum *= notch_image / 255
+            print(notch_image)
+
+        else:
+            if dev:
+                print("notch image not found.")
 
         self.mod_spectrum = mod_spectrum
 
