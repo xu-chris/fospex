@@ -184,7 +184,7 @@ export default {
   },
   data () {
     return {
-      progId: 0,
+      progId: null,
       image: '',
       imageURL: '',
       notch: '',
@@ -301,6 +301,7 @@ export default {
           // JSON responses are automatically parsed.
           this.spectrumImage = response.data['spectrumImage']
           this.imageResult = response.data['imageResult']
+          this.progId = response.data['progId']
           this.loadMod = false
         })
         .catch(e => {
