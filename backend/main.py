@@ -137,7 +137,8 @@ def filter_Image():
 
     response = {
         'imageResult': encoded_mod_img,
-        'spectrumImage': encoded_spectrum
+        'spectrumImage': encoded_spectrum,
+        'progId': prog_Id
     }
 
     # build message
