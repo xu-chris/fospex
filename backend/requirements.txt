@@ -19,7 +19,7 @@ PyWavelets==0.5.2
 scikit-image==0.13.1
 scipy==1.1.0
 six==1.11.0
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 Click==7.0
 cycler==0.10.0
 Flask==1.0.2
@@ -35,4 +35,4 @@ Pillow==5.3.0
 pyparsing==2.3.0
 python-dateutil==2.7.5
 six==1.11.0
-Werkzeug==0.14.1
+Werkzeug==0.15.3
